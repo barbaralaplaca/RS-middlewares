@@ -13,8 +13,9 @@ function checksExistsUserAccount (request, response, next) {
   const { username } = request.headers;
 
   const user = users.find(user => user.username === username);
+
   if (!user) {
-    return response.status(404)
+    return response.status(404).json({ error: 'User not found' });
   }
 
   request.user = user
@@ -25,7 +26,7 @@ function checksCreateTodosUserAvailability(request, response, next) {
   const { user } = request;
 
   if (!user.pro && user.todos.length >=10) {
-    return response.status(403)
+    return response.status(403).json({ message: 'Sign in for our Pro account to be able to register more Todos'})
   }
 
   return next();
@@ -37,16 +38,16 @@ function checksTodoExists(request, response, next) {
 
   const user = users.find(user => user.username === username);
   if (!user) {
-    return response.status(404)
+    return response.status(404).json({ error: 'User not found' });
   }
 
   if (!validate(id)) {
-    return response.status(400)
+    return response.status(400).json({ error: 'Id invalid' })
   }
 
   const todo = user.todos.find(todo => todo.id === id)
   if (!todo) {
-    return response.status(404)
+    return response.status(404).json({ error: 'Todo not found' });
   }
 
   request.user = user;
@@ -60,7 +61,7 @@ function findUserById(request, response, next) {
 
   const user = users.find(user => user.id === id);
   if (!user) {
-    return response.status(404)
+    return response.status(404).json({ error: 'User not found'})
   }
 
   request.user = user;
@@ -72,6 +73,9 @@ app.post('/users', (request, response) => {
 
   const usernameAlreadyExists = users.some((user) => user.username === username);
 
+  if (!name || !username) {
+    return response.status(400).json({ error: 'Username/Name invalid' });
+  }
   if (usernameAlreadyExists) {
     return response.status(400).json({ error: 'Username already exists' });
   }
@@ -116,6 +120,10 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
 app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (request, response) => {
   const { title, deadline } = request.body;
   const { user } = request;
+
+  if (!title || !deadline) {
+    return response.status(404).json({ error: 'Input invalid' })
+  }
 
   const newTodo = {
     id: uuidv4(),
